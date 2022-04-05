@@ -2,14 +2,24 @@
 
 namespace App\Entity;
 
-use App\Repository\UserRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use App\Entity\Customer;
+use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\UserRepository;
+use Doctrine\Common\Collections\Collection;
+use ApiPlatform\Core\Annotation\ApiResource;
+use Doctrine\Common\Collections\ArrayCollection;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Security\Core\User\UserInterface;
-
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 /**
  * @ORM\Entity(repositoryClass=UserRepository::class)
+ * @ApiResource(
+ *   normalizationContext={"groups"={"users_read"}}
+ * )
+ * @UniqueEntity("email")
  */
 class User implements UserInterface
 {
@@ -17,11 +27,13 @@ class User implements UserInterface
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
      */
     private $id;
 
     /**
      * @ORM\Column(type="string", length=180, unique=true)
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
      */
     private $email;
 
@@ -38,11 +50,19 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
+     * @Assert\NotBlank(message="Le prénom de customer est obligatoire")
+     * @Assert\Length(min=5, minMessage="Le prenom de famille doit etre compris entre 3 et 255 caractères",
+     *                max=255, maxMessage="Le prénom doit etre compris entre 3 et 255 caractères")
      */
     private $firstname;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
+     * @Assert\NotBlank(message="Le prénom de customer est obligatoire")
+     * @Assert\Length(min=5, minMessage="Le nom de famille doit etre compris entre 3 et 255 caractères",
+     *                max=255, maxMessage="Le nom doit etre compris entre 3 et 255 caractères")
      */
     private $lastname;
 
@@ -190,4 +210,5 @@ class User implements UserInterface
 
         return $this;
     }
+
 }
