@@ -17,9 +17,20 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 /**
  * @ORM\Entity(repositoryClass=UserRepository::class)
  * @ApiResource(
- *   normalizationContext={"groups"={"users_read"}}
+ *   normalizationContext={"groups"={"users_read"}},
+ *   collectionOperations={"GET",
+ *                   "POST",
+ *                
+ *                   "CONECTED"={"method"="GET",
+ *                               "path"="/user/connected",
+ *                               "controller"="App\Controller\ConnectedUserController",
+ *                                                      "swagger_context"={
+ *                                                              "summary"="L'utilisateur connecté",
+ *                                                              "description"="Rencoie l'utilisateur connecté"
+ *                                                              }
+ *                                                       }},
  * )
- * @UniqueEntity("email")
+ * @UniqueEntity("email", message="l'email est déja utilisé")
  */
 class User implements UserInterface
 {
@@ -27,13 +38,15 @@ class User implements UserInterface
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
-     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
      */
     private $id;
 
     /**
+     * @Assert\Length(min=5, minMessage="Le prenom de famille doit etre compris entre 3 et 255 caractères",
+     *                max=255, maxMessage="Le prénom doit etre compris entre 3 et 255 caractères")
      * @ORM\Column(type="string", length=180, unique=true)
-     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
      */
     private $email;
 
@@ -50,7 +63,7 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
      * @Assert\NotBlank(message="Le prénom de customer est obligatoire")
      * @Assert\Length(min=5, minMessage="Le prenom de famille doit etre compris entre 3 et 255 caractères",
      *                max=255, maxMessage="Le prénom doit etre compris entre 3 et 255 caractères")
@@ -59,7 +72,7 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read"})
+     * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
      * @Assert\NotBlank(message="Le prénom de customer est obligatoire")
      * @Assert\Length(min=5, minMessage="Le nom de famille doit etre compris entre 3 et 255 caractères",
      *                max=255, maxMessage="Le nom doit etre compris entre 3 et 255 caractères")
@@ -71,9 +84,15 @@ class User implements UserInterface
      */
     private $customer;
 
+    /**
+     * @ORM\OneToMany(targetEntity=Expense::class, mappedBy="user")
+     */
+    private $expenses;
+
     public function __construct()
     {
         $this->customer = new ArrayCollection();
+        $this->expenses = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -210,5 +229,227 @@ class User implements UserInterface
 
         return $this;
     }
+public function getUserIdentifier()
+{
+    return (string) $this->email;
+}
 
+/**
+ * @return Collection|Expense[]
+ */
+public function getExpenses(): Collection
+{
+    return $this->expenses;
+}
+
+public function addExpense(Expense $expense): self
+{
+    if (!$this->expenses->contains($expense)) {
+        $this->expenses[] = $expense;
+        $expense->setUser($this);
+    }
+    return $this;
+}
+
+public function removeExpense(Expense $expense): self
+{
+    if ($this->expenses->removeElement($expense)) {
+        // set the owning side to null (unless already changed)
+        if ($expense->getUser() === $this) {
+            $expense->setUser(null);
+        }
+    }
+
+    return $this;
+}
+/**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getExpenseCount(){
+     return count($this->expenses->toArray());
+  }
+  /**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getCustomerCount(){
+    return count($this->customer);
+  }
+/**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getInvoiceCount(){
+    $invoices = [];
+    foreach($this->customer as $c){
+      $invoices=    array_merge($invoices, $c->getInvoices()->toArray());
+    }
+    return count($invoices);
+  }
+
+  /**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+   public function getAmountTotalInvoice(){
+
+      $invoices = [];
+      foreach($this->customer as $c){
+        $invoices=    array_merge($invoices, $c->getInvoices()->toArray());
+      }
+     return  array_reduce($invoices,function($total,$item){
+       
+      $total = round( $total + $item->getAmount(),0);
+      return $total;
+      });
+   }
+
+   /**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+   public function getAmountTotalInvoicePaid(){
+
+    $invoices = [];
+    foreach($this->customer as $c){
+       
+          $invoices=    array_merge($invoices, $c->getInvoices()->toArray());
+          
+    }
+    return array_reduce($invoices,function($total,$item){
+        if($item->getStatus() === "paid"){
+             $total =round($total + $item->getAmount(),0) ;
+        }
+   
+    return $total;
+    });
+    
+ }
+
+ /**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+ public function getAmountTotalInvoiceNotPaid(){
+
+    $invoices = [];
+    foreach($this->customer as $c){
+      
+            $invoices=    array_merge($invoices, $c->getInvoices()->toArray());
+         
+    }
+   return array_reduce($invoices,function($total,$item){
+     
+       
+    if($item->getStatus() !== "paid"){
+        $total = round($total + $item->getAmount(),0) ;
+     }
+        
+    return $total;
+    });
+}
+
+/**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getAmountTvaInvoice(){
+
+    $invoices = [];
+    foreach($this->customer as $c){
+      
+            $invoices= array_merge($invoices, $c->getInvoices()->toArray());
+         
+    }
+   return array_reduce($invoices,function($total,$item){
+     
+       
+        $total = round( ($item->getTva()/100) * $item->getAmount(),0);
+
+        
+    return $total;
+    });
+}
+
+
+/**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+public function getExpenseAmount(){
+
+    return array_reduce($this->expenses->toArray(),function($total,$item){
+     
+       
+
+            $total = round($total + $item->getAmount(),0);
+  
+            
+        return $total;
+        });
+}
+
+/**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getExpenseTva(){
+    return array_reduce($this->expenses->toArray(),function($total,$item){
+            $total = round( $total + (($item->getTva()/100) * $item->getPrice())) ;   
+        return $total;
+        });
+}
+
+/**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getTva(){
+    return $this->getAmountTvaInvoice() - $this->getExpenseTva();
+  }
+   /**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getDataGraphTotal(){
+    $data = [];
+    $invoices = [];
+    foreach($this->customer as $c){
+       
+          $invoices=    array_merge($invoices, $c->getInvoices()->toArray());
+          
+    }
+      foreach($invoices as $invoice){
+        $data[$invoice->getPaimentDate()->format('Y/m/d')] = round($invoice->getAmountTotal(),0) ;
+      }
+    return $data;
+ }
+
+  /**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getDataGraphPaid(){
+    $data = [];
+    $invoices = [];
+    foreach($this->customer as $c){
+       
+          $invoices=    array_merge($invoices, $c->getInvoices()->toArray());
+          
+    }
+      foreach($invoices as $invoice){
+        if($invoice->getStatus() === "paid"){
+            $data[$invoice->getPaimentDate()->format('Y/m/d')] = round($invoice->getAmountTotal(),0);
+        }
+       
+      }
+    return $data;
+ }
+
+  /**
+   * @Groups({"invoces_read","customer_read","invoices_subresource","users_read","expense_read"})
+   */
+  public function getDataGraphNotPaid(){
+    $data = [];
+    $invoices = [];
+    foreach($this->customer as $c){
+          $invoices = array_merge($invoices, $c->getInvoices()->toArray());  
+    }
+      foreach($invoices as $invoice){
+        if($invoice->getStatus() !== "paid"){
+            $data[$invoice->getPaimentDate()->format('Y/m/d')] = round($invoice->getAmountTotal(),0) ;
+        }
+       
+      }
+    return $data;
+ }
 }

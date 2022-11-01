@@ -3,6 +3,7 @@
 namespace App\DataFixtures;
 
 use App\Entity\Customer;
+use App\Entity\Expense;
 use App\Entity\Invoice;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -33,6 +34,17 @@ class AppFixtures extends Fixture
                ->setPassword($hash);
            $manager->persist($user);
            for($i=0; $i<mt_rand(5,20);$i++){
+            $expense = new Expense();
+            $expense->setPrice($faker->numberBetween(100,1000))
+                    ->setCaption($faker->paragraph())
+                    ->setTva($faker->randomElement([0,5,20]))
+                    ->setUser($user)
+                    ->setType($faker->randomElement(['Facture','Ticket']))
+                    ->setPurchaseDate(new \dateTime($faker->date))
+          ; 
+          $manager->persist($expense);
+        }
+           for($i=0; $i<mt_rand(5,20);$i++){
                $customer = new Customer();
                $customer->setLastname($faker->lastName)
                    ->setFirstname($faker->firstName)
@@ -46,6 +58,8 @@ class AppFixtures extends Fixture
                        ->setSentAt($faker->dateTimeBetween('- 6months'))
                        ->setStatus($faker->randomElement(['sent','paid','canceled']))
                        ->setCustomer($customer)
+                       ->setPaimentDate(new \datetime($faker->date))
+                       ->setTva($faker->randomElement([0,5,20]))
                        ->setChrono($chrono);
                    $chrono++;
                    $manager->persist($invoice);

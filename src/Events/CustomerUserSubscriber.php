@@ -34,7 +34,7 @@ class CustomerUserSubscriber implements EventSubscriberInterface {
         
         $result->setUser($user) ;
          
-        dd($user);
+     
          
      }
 }

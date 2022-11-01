@@ -25,12 +25,15 @@ class InvoiceEventSubscriber implements EventSubscriberInterface {
             KernelEvents::VIEW => ["setChrono", EventPriorities::PRE_VALIDATE]
         ];
      }
+ 
 
      public function setChrono(ViewEvent $event){
 
     
          $result = $event->getControllerResult();
          $user = $this->security->getUser();
+         if(!$user) return;
+         //dd($user);
         // dd($this->rep->getLastChrono($user) + 1);
          $nextChrono = $this->rep->getLastChrono($user) + 1;
          $method = $event->getRequest()->getMethod();
@@ -39,10 +42,16 @@ class InvoiceEventSubscriber implements EventSubscriberInterface {
         }
         
          $result->setChrono($nextChrono);
+         
+       
          if(empty($result->getSentAt())){
              $result->setSentAt(new \DateTime());
          }
          
          
-     }
+     }  
 }
+
+
+
+      

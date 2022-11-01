@@ -13,15 +13,17 @@ use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use Symfony\Component\Validator\Constraints as Assert;
+
+// *    itemOperations={"GET","PUT","DELETE", "POST"},
 /**
  * @ORM\Entity(repositoryClass=CustomerRepository::class)
  * @ApiResource(
  *    attributes={
  *       "pagination_enabled"=true,
- *       "pagination_items_per_page"=5
+ *       "pagination_items_per_page"=1000
  *    },
- *    collectionOperations={"GET"={"path"="/customers"}, "POST"},
- *    itemOperations={"GET","PUT","DELETE"},
+ *    collectionOperations={"GET", "POST"},
+
  *    subresourceOperations={
  *       "invoces_get_subresource"={"path"="/clients/{id}/factures"}
  *    },
@@ -46,7 +48,7 @@ class Customer
      * @ORM\Column(type="string", length=255)
      * @Groups({"customer_read","invoces_read"})
      * @Assert\NotBlank(message="Le prénom de customer est obligatoire")
-     * @Assert\Length(min=5, minMessage="Le nom de famille doit etre compris entre 3 et 255 caractères",
+     * @Assert\Length(min=2, minMessage="Le nom de famille doit etre compris entre 3 et 255 caractères",
      *                max=255, maxMessage="Le prénom doit etre compris entre 3 et 255 caractères")
      */
     private $firstname;
@@ -55,7 +57,7 @@ class Customer
      * @ORM\Column(type="string", length=255)
      * @Groups({"customer_read","invoces_read"})
      * @Assert\NotBlank(message="Le prénom de customer est obligatoire")
-     * @Assert\Length(min=5, minMessage="Le prénom doit etre compris entre 3 et 255 caractères",
+     * @Assert\Length(min=2, minMessage="Le prénom doit etre compris entre 3 et 255 caractères",
      *                max=255, maxMessage="Le prénom doit etre compris entre 3 et 255 caractères")
      */
     private $lastname;
